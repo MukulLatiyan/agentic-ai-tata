@@ -1,0 +1,82 @@
+{
+  "name": "Mukul",
+  "age": 32,
+  "location": "Mumbai, Maharashtra",
+  "occupation": "Software Engineer",
+  "income": "₹15,00,000/year",
+  "cars": [
+    {
+      "make": "Honda",
+      "model": "City",
+      "year": 2020,
+      "variant": "VX CVT",
+      "registration": "MH02AB1234",
+      "isPrimary": true
+    },
+    {
+      "make": "Maruti",
+      "model": "Swift",
+      "year": 2018,
+      "variant": "ZXI",
+      "registration": "MH01CD5678",
+      "isPrimary": false
+    }
+  ],
+  "family": {
+    "spouse": {
+      "name": "Priya",
+      "age": 29
+    },
+    "children": 1,
+    "totalDependents": 2
+  },
+  "health": {
+    "smoker": false,
+    "preExistingConditions": "None",
+    "lastCheckup": "6 months ago",
+    "gymMember": true,
+    "bmi": "Normal",
+    "medicalHistory": []
+  },
+  "insurance": {
+    "currentPolicies": [
+      "Basic health insurance through company"
+    ],
+    "preferredCoverage": "Comprehensive",
+    "budgetRange": {
+      "min": 15000,
+      "max": 25000,
+      "currency": "₹",
+      "period": "year"
+    },
+    "riskTolerance": "Medium",
+    "previousClaims": "None"
+  },
+  "lifestyle": {
+    "drivingExperience": "12 years",
+    "accidentHistory": "None",
+    "travelFrequency": "Moderate",
+    "hobbies": [
+      "Technology",
+      "Fitness",
+      "Travel"
+    ],
+    "workFromHome": true,
+    "dailyCommute": "15 km"
+  },
+  "preferences": {
+    "communicationStyle": "Direct and efficient",
+    "preferredLanguage": "English",
+    "notificationPreferences": {
+      "email": true,
+      "sms": true,
+      "whatsapp": false
+    }
+  },
+  "financial": {
+    "creditScore": "Good",
+    "bankingRelationship": "HDFC Bank",
+    "investmentProfile": "Moderate",
+    "monthlyExpenses": "₹80,000"
+  }
+}

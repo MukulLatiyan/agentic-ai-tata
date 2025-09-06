@@ -1,0 +1,27 @@
+{
+  "name": "agentic-chat-app",
+  "version": "1.0.0",
+  "description": "A2A Communication Chat App with Personal and TATA AIG Bots",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup": "node setup.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.1",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "openai": "^4.20.1",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["chat", "bot", "a2a", "agent-communication"],
+  "author": "Your Name",
+  "license": "MIT"
+}

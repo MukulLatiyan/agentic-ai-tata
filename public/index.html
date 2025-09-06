@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Chat - Personal Bot & TATA AIG</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="app-icon">🤖</div>
+                    <div class="header-info">
+                        <h1>Agentic Chat</h1>
+                        <span class="status">Personal Bot & TATA AIG Ready</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="connection-status" id="connectionStatus">
+                        <div class="status-dot"></div>
+                        <span>Connected</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <!-- Messages Area -->
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-message">
+                    <div class="welcome-content">
+                        <div class="welcome-icon">👋</div>
+                        <h2>Welcome back, Mukul!</h2>
+                        <p>I'm ready to help with your insurance needs. I know about your Honda City and Maruti Swift, your family situation, and your preferences. Let me get you the best deals with TATA AIG!</p>
+                        <div class="quick-actions">
+                            <button class="quick-action" onclick="sendQuickMessage('Get me a quote for my Honda City')">
+                                🚗 Car Insurance
+                            </button>
+                            <button class="quick-action" onclick="sendQuickMessage('I need health insurance for my family')">
+                                🏥 Health Insurance
+                            </button>
+                            <button class="quick-action" onclick="sendQuickMessage('Show me life insurance options')">
+                                👨‍👩‍👧‍👦 Life Insurance
+                            </button>
+                            <button class="quick-action" onclick="sendQuickMessage('What insurance do you recommend for me?')">
+                                🤖 AI Recommendation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Negotiation Indicator -->
+            <div class="negotiation-indicator" id="negotiationIndicator" style="display: none;">
+                <div class="negotiation-content">
+                    <div class="negotiation-spinner"></div>
+                    <div class="negotiation-text">
+                        <strong>A2A Communication in Progress</strong>
+                        <span id="negotiationStep">PersonalBot is talking to TATA AIG...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Type your message here..."
+                        maxlength="500"
+                    >
+                    <button id="sendButton" class="send-button">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="char-count" id="charCount">0/500</span>
+                    <span class="input-hint">Press Enter to send</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Modal -->
+    <div class="modal-overlay" id="offerModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎉 Negotiated Offer</h3>
+                <button class="modal-close" onclick="closeOfferModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="offerDetails">
+                <!-- Offer details will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="rejectOffer()">Negotiate More</button>
+                <button class="btn btn-primary" onclick="acceptOffer()">Accept Offer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
