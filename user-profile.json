@@ -54,7 +54,16 @@
         "bloodGroup": "A+",
         "allergies": ["Dust"],
         "chronicConditions": "None",
-        "lastCheckup": "4 months ago"
+        "lastCheckup": "4 months ago",
+        "medications": "None",
+        "preExistingConditions": "None",
+        "emergencyContact": "+91-9876543212"
+      },
+      "insuranceCoverage": {
+        "coveredUnder": "TAIG2024HLTH789456",
+        "relationshipToPolicy": "Spouse",
+        "coverageAmount": "₹10,00,000",
+        "waitingPeriodCompleted": true
       }
     },
     "children": 1,
@@ -65,7 +74,19 @@
         "age": 5,
         "bloodGroup": "O+",
         "vaccinations": "Up to date",
-        "allergies": "None"
+        "allergies": "None",
+        "pediatrician": {
+          "name": "Dr. Sunita Patel",
+          "hospital": "Fortis Hospital, Mumbai",
+          "phone": "+91-22-6754-6701"
+        },
+        "insuranceCoverage": {
+          "coveredUnder": "TAIG2024HLTH789456",
+          "relationshipToPolicy": "Child",
+          "coverageAmount": "₹10,00,000",
+          "waitingPeriodCompleted": true,
+          "specialBenefits": ["Vaccination coverage", "Child wellness program"]
+        }
       }
     ]
   },
@@ -84,14 +105,53 @@
         "date": "2023-08-15",
         "condition": "Minor food poisoning",
         "treatment": "Medication",
-        "resolved": true
+        "hospital": "Apollo Hospital, Mumbai",
+        "doctor": "Dr. Ramesh Sharma",
+        "resolved": true,
+        "claimSubmitted": true,
+        "claimId": "CLM2023001234"
       }
     ],
     "medications": "None",
     "allergies": ["Shellfish"],
     "chronicConditions": "None",
     "familyMedicalHistory": "Diabetes (father), Hypertension (mother)",
-    "preferredHospitals": ["Apollo Hospital", "Fortis Hospital", "Lilavati Hospital"]
+    "preferredHospitals": ["Apollo Hospital", "Fortis Hospital", "Lilavati Hospital"],
+    "primaryPhysician": {
+      "name": "Dr. Anjali Mehta",
+      "specialization": "General Medicine",
+      "hospital": "Fortis Hospital, Mumbai",
+      "phone": "+91-22-6754-6700",
+      "consultationFee": "₹1,200"
+    },
+    "emergencyContacts": [
+      {
+        "name": "Priya (Spouse)",
+        "phone": "+91-9876543212",
+        "relationship": "Spouse",
+        "bloodGroup": "A+"
+      },
+      {
+        "name": "Ramesh Latiyan (Father)",
+        "phone": "+91-9876543213",
+        "relationship": "Father",
+        "medicalConditions": ["Diabetes Type 2"]
+      }
+    ],
+    "vitalParameters": {
+      "lastRecorded": "2024-01-15",
+      "bloodPressure": "120/80 mmHg",
+      "heartRate": "72 bpm",
+      "cholesterol": "180 mg/dL",
+      "bloodSugar": "95 mg/dL (fasting)",
+      "nextCheckupDue": "2024-07-15"
+    },
+    "healthGoals": [
+      "Maintain healthy weight",
+      "Regular exercise routine",
+      "Annual health checkups",
+      "Stress management"
+    ]
   },
   "insurance": {
     "healthInsurance": {
@@ -117,6 +177,120 @@
       "waitingPeriods": {
         "preExisting": "48 months",
         "specificDiseases": "24 months"
+      },
+      "networkHospitals": [
+        {
+          "name": "Apollo Hospital",
+          "location": "Mumbai",
+          "address": "Plot No. 13, Parsik Hill Road, Sector 23, CBD Belapur, Navi Mumbai",
+          "phone": "+91-22-2775-0000",
+          "specialties": ["Cardiology", "Oncology", "Neurology", "Orthopedics"],
+          "cashlessAvailable": true,
+          "emergencyServices": true
+        },
+        {
+          "name": "Fortis Hospital",
+          "location": "Mumbai",
+          "address": "Mulund Goregaon Link Road, Mulund West, Mumbai",
+          "phone": "+91-22-6754-6700",
+          "specialties": ["Cardiology", "Gastroenterology", "Nephrology", "Emergency Care"],
+          "cashlessAvailable": true,
+          "emergencyServices": true
+        },
+        {
+          "name": "Lilavati Hospital",
+          "location": "Mumbai",
+          "address": "A-791, Bandra Reclamation, Bandra West, Mumbai",
+          "phone": "+91-22-2642-2222",
+          "specialties": ["Multi-specialty", "ICU", "Emergency", "Surgery"],
+          "cashlessAvailable": true,
+          "emergencyServices": true
+        },
+        {
+          "name": "Jupiter Hospital",
+          "location": "Thane",
+          "address": "Eastern Express Highway, Thane West, Mumbai",
+          "phone": "+91-22-2169-5000",
+          "specialties": ["Cardiac Surgery", "Neurosurgery", "Oncology"],
+          "cashlessAvailable": true,
+          "emergencyServices": true
+        }
+      ],
+      "claimProcess": {
+        "cashlessClaimSteps": [
+          "Contact hospital for pre-authorization",
+          "Provide policy number and insured ID",
+          "Hospital submits authorization request to TATA AIG",
+          "Approval received within 2-6 hours",
+          "Treatment can proceed with cashless facility"
+        ],
+        "reimbursementClaimSteps": [
+          "Keep all original bills and medical reports",
+          "Fill claim form within 30 days of discharge",
+          "Submit documents to nearest TATA AIG office",
+          "Claim processed within 15 days",
+          "Amount credited to registered bank account"
+        ],
+        "requiredDocuments": [
+          "Duly filled claim form",
+          "Original bills and receipts",
+          "Discharge summary",
+          "Diagnostic reports",
+          "Doctor's prescription",
+          "KYC documents (Aadhar, PAN)",
+          "Cancelled cheque for bank details"
+        ],
+        "emergencyClaimNumber": "1800-266-7780",
+        "claimSubmissionDeadline": "30 days from discharge"
+      },
+      "benefitUtilization": {
+        "currentYear": "2024-25",
+        "familyFloaterUsed": "₹45,000",
+        "familyFloaterRemaining": "₹29,55,000",
+        "individualCoverageUsed": {
+          "Mukul": "₹45,000",
+          "Priya": "₹0",
+          "Arya": "₹0"
+        },
+        "individualCoverageRemaining": {
+          "Mukul": "₹9,55,000",
+          "Priya": "₹10,00,000",
+          "Arya": "₹10,00,000"
+        },
+        "healthCheckupUsed": "₹0",
+        "healthCheckupRemaining": "₹5,000"
+      },
+      "exclusions": [
+        "Pre-existing diseases (first 48 months)",
+        "Cosmetic surgery",
+        "Dental treatment (unless due to accident)",
+        "Alternative treatments (Ayurveda, Homeopathy)",
+        "Pregnancy-related expenses (first 9 months)",
+        "Self-inflicted injuries",
+        "War and nuclear risks",
+        "Alcohol or drug abuse related treatment"
+      ],
+      "specialBenefits": {
+        "noClaimBonus": "10% (current year)",
+        "automaticRecharge": "Available after 75% utilization",
+        "secondOpinionService": "Available for critical illnesses",
+        "wellnessBenefits": [
+          "Annual health checkup",
+          "Vaccination coverage",
+          "Fitness tracker discounts",
+          "Telemedicine consultations"
+        ]
+      },
+      "policyContacts": {
+        "customerCare": "1800-266-7780",
+        "claimsHelpline": "1800-266-7781",
+        "email": "customercare@tataaig.com",
+        "branchAddress": "TATA AIG General Insurance, Bandra Kurla Complex, Mumbai",
+        "relationshipManager": {
+          "name": "Rajesh Kumar",
+          "phone": "+91-9876543100",
+          "email": "rajesh.kumar@tataaig.com"
+        }
       }
     },
     "lifeInsurance": {
@@ -156,12 +330,45 @@
     "claimsHistory": [
       {
         "claimId": "CLM2023001234",
+        "policyNumber": "TAIG2024HLTH789456",
         "policyType": "Health",
+        "claimType": "Hospitalization",
         "date": "2023-08-20",
-        "amount": "₹45,000",
-        "reason": "Food poisoning hospitalization",
+        "admissionDate": "2023-08-18",
+        "dischargeDate": "2023-08-20",
+        "hospital": "Apollo Hospital, Mumbai",
+        "doctor": "Dr. Ramesh Sharma",
+        "diagnosis": "Acute gastroenteritis due to food poisoning",
+        "treatment": "IV fluids, antibiotics, monitoring",
+        "claimedAmount": "₹45,000",
+        "approvedAmount": "₹42,500",
+        "deductibleApplied": "₹2,500",
         "status": "Settled",
-        "hospital": "Apollo Hospital, Mumbai"
+        "settlementDate": "2023-09-02",
+        "claimSubmissionDate": "2023-08-25",
+        "processingTime": "8 working days",
+        "paymentMode": "Bank transfer",
+        "documentsSubmitted": [
+          "Discharge summary",
+          "Medical bills",
+          "Diagnostic reports",
+          "Claim form",
+          "ID proof"
+        ],
+        "cashless": false,
+        "reason": "Non-network hospital selected"
+      }
+    ],
+    "preAuthorizationHistory": [
+      {
+        "authId": "AUTH2024001",
+        "date": "2024-01-15",
+        "hospital": "Fortis Hospital, Mumbai",
+        "procedure": "Annual health checkup",
+        "estimatedAmount": "₹5,000",
+        "approvedAmount": "₹5,000",
+        "status": "Approved",
+        "validTill": "2024-01-30"
       }
     ]
   },

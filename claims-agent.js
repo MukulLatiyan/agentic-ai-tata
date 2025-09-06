@@ -100,19 +100,25 @@ Always be professional, empathetic, and solution-oriented while adhering to poli
       return assessment;
     }
 
-    // Check policy validity
+    // Check policy validity with proper date handling
     const currentDate = new Date();
     const policyEndDate = new Date(policy.validTill);
-    if (currentDate > policyEndDate) {
-      assessment.reason = 'Policy has expired';
-      assessment.nextSteps = ['Please renew your policy to proceed with claims'];
-      return assessment;
+    
+    // For health insurance, be more lenient with date checking
+    if (claimType.includes('health')) {
+      // Always proceed with health claims if policy exists - let detailed assessment handle validity
+      return this.assessHealthClaim(claimDetails, policy, userProfile, assessment);
+    } else {
+      // For other policies, check expiry strictly
+      if (currentDate > policyEndDate) {
+        assessment.reason = 'Policy has expired';
+        assessment.nextSteps = ['Please renew your policy to proceed with claims'];
+        return assessment;
+      }
     }
 
     // Assess based on claim type
-    if (claimType.includes('health')) {
-      return this.assessHealthClaim(claimDetails, policy, userProfile, assessment);
-    } else if (claimType.includes('motor')) {
+    if (claimType.includes('motor')) {
       return this.assessMotorClaim(claimDetails, policy, userProfile, assessment);
     } else if (claimType.includes('life')) {
       return this.assessLifeClaim(claimDetails, policy, userProfile, assessment);
@@ -125,11 +131,25 @@ Always be professional, empathetic, and solution-oriented while adhering to poli
     const claimAmount = parseInt(claimDetails.amount?.replace(/[^\d]/g, '') || '0');
     const coverageLimit = parseInt(policy.coverage?.replace(/[^\d]/g, '') || '0');
     
+    // Check policy validity for health claims specifically
+    const currentDate = new Date();
+    const policyEndDate = new Date(policy.validTill);
+    
+    if (currentDate > policyEndDate) {
+      assessment.approved = false;
+      assessment.reason = 'Health claim under process';
+      assessment.nextSteps = ['Please renew your health insurance policy to proceed with claims', 'We will keep you posted on renewal options'];
+      return assessment;
+    }
+    
+    // Policy is valid - proceed with assessment
+    assessment.reason = 'Health claim under process';
+    
     // Check coverage limit
     if (claimAmount > coverageLimit) {
       assessment.approved = false;
-      assessment.reason = `Claim amount (₹${claimAmount.toLocaleString()}) exceeds policy coverage (${policy.coverage})`;
-      assessment.nextSteps = ['Consider partial settlement up to policy limit'];
+      assessment.reason = `Health claim under process - Claim amount (₹${claimAmount.toLocaleString()}) exceeds policy coverage (${policy.coverage})`;
+      assessment.nextSteps = ['Consider partial settlement up to policy limit', 'We will keep you posted on the claim status'];
       return assessment;
     }
 
@@ -140,7 +160,7 @@ Always be professional, empathetic, and solution-oriented while adhering to poli
 
     assessment.approved = true;
     assessment.amount = claimAmount;
-    assessment.reason = 'Claim meets all policy criteria';
+    assessment.reason = 'Health claim under process';
     assessment.requiredDocuments = [
       'Hospital discharge summary',
       'Medical bills and receipts',
@@ -153,13 +173,15 @@ Always be professional, empathetic, and solution-oriented while adhering to poli
       assessment.nextSteps = [
         'Cashless claim approved',
         'Hospital will receive direct payment',
-        'Claim will be settled within 3-5 working days'
+        'Claim will be settled within 3-5 working days',
+        'We will keep you posted on the settlement progress'
       ];
     } else {
       assessment.nextSteps = [
         'Reimbursement claim approved',
         'Submit original bills for processing',
-        'Amount will be credited within 7-10 working days'
+        'Amount will be credited within 7-10 working days',
+        'We will keep you posted on the claim status and settlement'
       ];
     }
 
