@@ -8,6 +8,8 @@ const { v4: uuidv4 } = require('uuid');
 const OpenAI = require('openai');
 const TataAigDataService = require('./tataAigScraper');
 const ProfileManager = require('./profile-manager');
+const ClaimsAgent = require('./claims-agent');
+const HealthCheckupAgent = require('./health-checkup-agent');
 
 const app = express();
 const server = http.createServer(app);
@@ -89,11 +91,11 @@ const userSessions = new Map();
 const conversationHistory = new Map();
 const completedTransactions = new Map(); // Track completed insurance transactions
 
-// Initialize TATA AIG data service
+// Initialize services
 const tataAigDataService = new TataAigDataService();
-
-// Initialize Profile Manager
 const profileManager = new ProfileManager();
+const claimsAgent = new ClaimsAgent();
+const healthCheckupAgent = new HealthCheckupAgent();
 const userProfile = profileManager.getProfile();
 
 // Initialize bots (declare here so they can be referenced in API endpoints)
@@ -111,8 +113,44 @@ class PersonalBot {
     this.userProfile = userProfile;
     this.profileManager = profileManager;
     
-    // Generate dynamic system prompt
-    this.systemPrompt = profileManager.generateSystemPrompt();
+    // Generate dynamic system prompt for service-focused bot
+    this.systemPrompt = `You are PersonalBot, ${userProfile.name}'s trusted insurance service assistant. You help with policy queries, claims processing, and health services.
+
+${userProfile.name.toUpperCase()}'S CURRENT POLICIES:
+- Health Insurance: ${userProfile.insurance.healthInsurance.policyNumber} (Coverage: ${userProfile.insurance.healthInsurance.coverage})
+- Life Insurance: ${userProfile.insurance.lifeInsurance.policyNumber} (Coverage: ${userProfile.insurance.lifeInsurance.coverage})
+- Motor Insurance (Honda City): ${userProfile.cars[0].insuranceDetails.policyNumber}
+- Motor Insurance (Swift): ${userProfile.cars[1].insuranceDetails.policyNumber}
+
+CORE SERVICES:
+1. 📋 POLICY INFORMATION: Answer questions about existing policy benefits, coverage, terms, and conditions
+2. 🚨 CLAIMS PROCESSING: File and track insurance claims (health/motor/life) - requires A2A with Claims Agent
+3. 🩺 HEALTH CHECKUP BOOKING: Schedule health checkups through TATA 1mg - requires A2A with Health Agent
+4. 💬 GENERAL SUPPORT: Answer general insurance questions and provide guidance
+
+SERVICE ROUTING RULES:
+- Policy benefit/coverage questions → serviceType: "policy_info", requiresA2A: false (handle directly)
+- Claim filing/processing → serviceType: "claims", requiresA2A: true (initiate A2A with Claims Agent)
+  * Health claims: "I need to file a health insurance claim", "medical claim", "hospital bill claim"
+  * Motor claims: "car accident claim", "vehicle damage claim", "motor insurance claim"
+  * Life claims: "life insurance claim"
+- Health checkup booking → serviceType: "health_checkup", requiresA2A: true (initiate A2A with TATA 1mg Agent)
+- General questions → serviceType: "general", requiresA2A: false (handle directly)
+
+BEHAVIOR GUIDELINES:
+- Act as a knowledgeable service agent who knows all policy details
+- For policy queries, provide specific information from their actual policies
+- For thank you messages after service completion, respond: "You're welcome!"
+- If specific policy details are missing, provide helpful general information and offer to find more details
+- ONLY use A2A for claims processing and health checkup booking
+
+Response format:
+{
+  "response": "Your helpful response with specific information",
+  "serviceType": "policy_info|claims|health_checkup|general",
+  "requiresA2A": true/false,
+  "serviceDetails": "specific details about the service needed - for claims include keywords like 'health', 'motor', 'car', 'medical', 'hospital', etc."
+}`;
   }
 
   async processUserMessage(message, userId, contextInfo = {}) {
@@ -140,40 +178,20 @@ class PersonalBot {
         temperature: 0.7,
         max_tokens: 500,
         functions: [{
-          name: 'process_insurance_request',
-          description: 'Process user insurance request and determine if you have ENOUGH information to start negotiation NOW',
+          name: 'process_service_request',
+          description: 'Process user service request and determine what type of service is needed',
           parameters: {
             type: 'object',
             properties: {
-              response: {
-                type: 'string',
-                description: 'Conversational response to the user'
-              },
-              requiresNegotiation: {
-                type: 'boolean',
-                description: 'TRUE only if you have COMPLETE information to negotiate RIGHT NOW. FALSE if you need more details from user.'
-              },
-              insuranceType: {
-                type: 'string',
-                description: 'Type of insurance if negotiation is needed'
-              },
-              userRequirements: {
-                type: 'string',
-                description: 'Complete detailed requirements for negotiation (only if requiresNegotiation is true)'
-              },
-              isGatheringInfo: {
-                type: 'boolean',
-                description: 'TRUE if you are still asking the user for more information'
-              },
-              hasCompleteInfo: {
-                type: 'boolean',
-                description: 'TRUE if user has provided all necessary details for negotiation'
-              }
+              response: { type: 'string', description: 'Your response to the user' },
+              serviceType: { type: 'string', enum: ['policy_info', 'claims', 'health_checkup', 'general'], description: 'Type of service needed' },
+              requiresA2A: { type: 'boolean', description: 'Whether A2A communication is needed' },
+              serviceDetails: { type: 'string', description: 'Details about the service needed' }
             },
-            required: ['response', 'requiresNegotiation', 'isGatheringInfo', 'hasCompleteInfo']
+            required: ['response', 'serviceType', 'requiresA2A']
           }
         }],
-        function_call: { name: 'process_insurance_request' }
+        function_call: { name: 'process_service_request' }
       });
 
       // Update conversation history
@@ -238,7 +256,7 @@ Always be ready to adjust offers based on counter-negotiations.`;
 
       // Get real TATA AIG data using profile
       let realData = null;
-      if (insuranceType.includes('car')) {
+      if (insuranceType && insuranceType.toLowerCase().includes('car')) {
         const carDetails = this.extractCarDetails(userRequirements) || userProfile.cars[0];
         realData = await tataAigDataService.getCarInsuranceData(carDetails);
       }
@@ -596,131 +614,45 @@ io.on('connection', (socket) => {
 
       // Log the bot's decision for debugging
       console.log('🤖 PersonalBot Response Analysis:', {
-        requiresNegotiation: personalBotResponse.requiresNegotiation,
-        isGatheringInfo: personalBotResponse.isGatheringInfo,
-        hasCompleteInfo: personalBotResponse.hasCompleteInfo,
-        insuranceType: personalBotResponse.insuranceType,
+        serviceType: personalBotResponse.serviceType,
+        requiresA2A: personalBotResponse.requiresA2A,
+        serviceDetails: personalBotResponse.serviceDetails,
         isRecentTransaction: isRecentTransaction,
         hasRecentCompletion: hasRecentCompletion,
         isProceedingMessage: isProceedingMessage
       });
 
-      // Only start A2A if we have complete information and are not gathering more info
-      // ALSO check if user just completed a transaction or is acknowledging
-      if (personalBotResponse.requiresNegotiation && 
-          personalBotResponse.hasCompleteInfo && 
-          !personalBotResponse.isGatheringInfo &&
-          !isRecentTransaction &&
-          !hasRecentCompletion &&
-          !isProceedingMessage) {
+      // Handle A2A only for claims and health checkups
+      if (personalBotResponse.requiresA2A && !isRecentTransaction && !hasRecentCompletion) {
+        const serviceId = uuidv4();
         
-        console.log('✅ A2A Negotiation triggered - All conditions met');
-        
-        // Validate we have substantial user requirements
-        const hasSubstantialInfo = personalBotResponse.userRequirements && 
-                                  personalBotResponse.userRequirements.length > 30;
-        
-        if (!hasSubstantialInfo) {
-          console.log('⚠️ A2A blocked: Insufficient user requirements detail');
-          return;
+        if (personalBotResponse.serviceType === 'claims') {
+          console.log('✅ Claims A2A triggered');
+          const claimDetails = {
+            claimType: personalBotResponse.serviceDetails || message,
+            amount: '50000',
+            description: personalBotResponse.serviceDetails || message,
+            originalMessage: message
+          };
+          await handleClaimsA2A(socket, serviceId, claimDetails, userProfile);
+          
+        } else if (personalBotResponse.serviceType === 'health_checkup') {
+          console.log('✅ Health Checkup A2A triggered');
+          await handleHealthCheckupA2A(socket, serviceId, personalBotResponse.serviceDetails, userProfile);
+          
+        } else {
+          console.log('⚠️ Unknown A2A service type:', personalBotResponse.serviceType);
         }
-        const negotiationId = uuidv4();
-        const negotiationData = {
-          userId,
-          insuranceType: personalBotResponse.insuranceType,
-          userRequirements: personalBotResponse.userRequirements || message,
-          status: 'negotiating',
-          personalBotMessage: personalBotResponse.response
-        };
-        
-        activeNegotiations.set(negotiationId, negotiationData);
-
-        // Start negotiation process
-        setTimeout(async () => {
-          try {
-            const negotiation = await tataAigBot.negotiateWithPersonalBot(
-              personalBotResponse.insuranceType,
-              negotiationData.userRequirements,
-              negotiationData.personalBotMessage
-            );
-
-            // Show negotiation steps
-            for (let i = 0; i < negotiation.negotiationSteps.length; i++) {
-              setTimeout(() => {
-                socket.emit('negotiation_update', {
-                  step: i + 1,
-                  message: negotiation.negotiationSteps[i],
-                  timestamp: new Date().toISOString()
-                });
-              }, (i + 1) * 800); // Faster initial negotiation
-            }
-
-            // Store the negotiation result
-            negotiationData.lastOffer = negotiation.finalOffer;
-            negotiationData.reasoning = negotiation.reasoning;
-            activeNegotiations.set(negotiationId, negotiationData);
-
-            // Send final offer after negotiation
-            setTimeout(() => {
-              socket.emit('bot_message', {
-                bot: 'tata_aig',
-                message: `Great news! I've analyzed your requirements and prepared a competitive offer:
-                
-📋 **${personalBotResponse.insuranceType.toUpperCase()}**
-💰 Premium: ${negotiation.finalOffer.premium}
-🛡️ Coverage: ${negotiation.finalOffer.coverage}
-🎉 Special Offer: ${negotiation.finalOffer.discount}
-
-✨ **Key Features:**
-${negotiation.finalOffer.features.map(f => `• ${f}`).join('\n')}
-
-${negotiation.reasoning || 'This offer provides excellent value with comprehensive coverage.'}
-
-Would you like to proceed with this offer?`,
-                timestamp: new Date().toISOString(),
-                avatar: tataAigBot.avatar,
-                name: tataAigBot.name,
-                offer: negotiation.finalOffer,
-                negotiationId: negotiationId
-              });
-
-              // PersonalBot follow-up
-              setTimeout(() => {
-                socket.emit('bot_message', {
-                  bot: 'personal',
-                  message: `I've successfully negotiated this deal with TATA AIG based on your requirements! The AI analysis shows this is a competitive offer with great benefits. Shall I proceed with the application, or would you like me to negotiate further on any specific aspect?`,
-                  timestamp: new Date().toISOString(),
-                  avatar: personalBot.avatar,
-                  name: personalBot.name
-                });
-              }, 2000);
-
-            }, negotiation.negotiationSteps.length * 800 + 500); // Faster timing
-          } catch (negotiationError) {
-            console.error('Negotiation Error:', negotiationError);
-            socket.emit('bot_message', {
-              bot: 'personal',
-              message: `I'm having trouble connecting with TATA AIG right now. Let me try a different approach to get you a good deal. Please wait a moment...`,
-              timestamp: new Date().toISOString(),
-              avatar: personalBot.avatar,
-              name: personalBot.name
-            });
-          }
-        }, 2000);
       } else {
         console.log('⏸️ A2A not triggered:', {
-          requiresNegotiation: personalBotResponse.requiresNegotiation,
-          isGatheringInfo: personalBotResponse.isGatheringInfo,
-          hasCompleteInfo: personalBotResponse.hasCompleteInfo,
-          isRecentTransaction: isRecentTransaction,
-          hasRecentCompletion: hasRecentCompletion,
-          isProceedingMessage: isProceedingMessage,
-          reason: personalBotResponse.isGatheringInfo ? 'Still gathering info' : 
-                  !personalBotResponse.hasCompleteInfo ? 'Incomplete info' :
+          serviceType: personalBotResponse.serviceType,
+          requiresA2A: personalBotResponse.requiresA2A,
+          isRecentTransaction,
+          hasRecentCompletion,
+          reason: !personalBotResponse.requiresA2A ? 'No A2A needed' :
                   isRecentTransaction ? 'Recent transaction completed' :
                   hasRecentCompletion ? 'Recent completion detected' :
-                  isProceedingMessage ? 'User acknowledging/proceeding' :
-                  'No negotiation required'
+                  'Service handled directly'
         });
       }
     } catch (error) {
@@ -729,363 +661,8 @@ Would you like to proceed with this offer?`,
     }
   });
 
-  socket.on('accept_offer', async (data) => {
-    const { negotiationId } = data;
-    
-    try {
-      // Get negotiation data
-      const negotiationData = negotiationId ? activeNegotiations.get(negotiationId) : null;
-      
-      if (!negotiationData) {
-        socket.emit('error', { message: 'Negotiation data not found. Please try again.' });
-        return;
-      }
-
-      // PersonalBot confirms acceptance and initiates payment process
-      socket.emit('bot_message', {
-        bot: 'personal',
-        message: `Perfect! I'm now coordinating with TATA AIG to process your application and set up payment. Let me get the payment details for you...`,
-        timestamp: new Date().toISOString(),
-        avatar: personalBot.avatar,
-        name: personalBot.name
-      });
-
-      // Start A2A communication for payment processing with visible steps
-      setTimeout(async () => {
-        try {
-          // Show A2A negotiation steps for payment setup
-          const paymentNegotiationSteps = [
-            'PersonalBot initiating payment setup with TATA AIG...',
-            'TATA AIG processing application details...',
-            'Calculating payment terms and due dates...',
-            'Generating secure payment gateway...',
-            'Finalizing payment setup...'
-          ];
-
-          // Show negotiation indicator
-          socket.emit('negotiation_update', {
-            step: 1,
-            message: paymentNegotiationSteps[0],
-            timestamp: new Date().toISOString()
-          });
-
-          // Show each negotiation step (faster)
-          for (let i = 1; i < paymentNegotiationSteps.length; i++) {
-            setTimeout(() => {
-              socket.emit('negotiation_update', {
-                step: i + 1,
-                message: paymentNegotiationSteps[i],
-                timestamp: new Date().toISOString()
-              });
-            }, i * 800); // Faster negotiation steps
-          }
-
-          // Process payment after negotiation steps
-          setTimeout(async () => {
-            const paymentResponse = await tataAigBot.processPayment(negotiationData);
-            
-            socket.emit('bot_message', {
-              bot: 'tata_aig',
-              message: `Thank you for choosing TATA AIG! Your application has been processed and is ready for payment.
-
-📋 **Application Details:**
-Policy Type: ${negotiationData.insuranceType}
-Premium Amount: ${paymentResponse.amount}
-Policy Term: ${paymentResponse.term}
-
-💳 **Payment Required:**
-Amount: ${paymentResponse.amount}
-Due Date: ${paymentResponse.dueDate}
-
-I've prepared a secure payment link for you. Please complete the payment to activate your policy.`,
-              timestamp: new Date().toISOString(),
-              avatar: tataAigBot.avatar,
-              name: tataAigBot.name,
-              paymentData: paymentResponse
-            });
-
-            // PersonalBot follow-up
-            setTimeout(() => {
-              socket.emit('bot_message', {
-                bot: 'personal',
-                message: `Perfect! I've successfully coordinated with TATA AIG to set up your payment. The secure payment portal is ready. The payment process is completely safe and encrypted. 🔒`,
-                timestamp: new Date().toISOString(),
-                avatar: personalBot.avatar,
-                name: personalBot.name
-              });
-            }, 2000);
-
-          }, paymentNegotiationSteps.length * 800 + 500); // Faster timing
-
-        } catch (error) {
-          console.error('Payment processing error:', error);
-          socket.emit('bot_message', {
-            bot: 'personal',
-            message: `I encountered an issue while setting up payment. Let me try again...`,
-            timestamp: new Date().toISOString(),
-            avatar: personalBot.avatar,
-            name: personalBot.name
-          });
-        }
-      }, 2000);
-
-    } catch (error) {
-      console.error('Accept offer error:', error);
-      socket.emit('error', { message: 'Sorry, something went wrong. Please try again.' });
-    }
-  });
-
-  socket.on('reject_offer', async (data) => {
-    const { negotiationId, feedback } = data;
-    
-    try {
-      // Get the active negotiation
-      const negotiationData = negotiationId ? activeNegotiations.get(negotiationId) : null;
-      
-      if (negotiationData && negotiationData.lastOffer) {
-        // Start renegotiation process
-        socket.emit('bot_message', {
-          bot: 'personal',
-          message: `I understand you'd like better terms. Let me renegotiate with TATA AIG to get you an improved offer. I'll push for better rates and additional benefits...`,
-          timestamp: new Date().toISOString(),
-          avatar: personalBot.avatar,
-          name: personalBot.name
-        });
-
-        // Show renegotiation indicator
-        setTimeout(() => {
-          socket.emit('negotiation_update', {
-            step: 1,
-            message: 'Initiating renegotiation with TATA AIG...',
-            timestamp: new Date().toISOString()
-          });
-        }, 1000);
-
-        setTimeout(async () => {
-          try {
-            const improvedNegotiation = await tataAigBot.renegotiate(
-              negotiationData.lastOffer,
-              feedback || 'User wants better terms',
-              'Personal Bot requesting improved offer with better rates and additional benefits'
-            );
-
-            // Update negotiation data
-            if (improvedNegotiation && improvedNegotiation.finalOffer) {
-              negotiationData.lastOffer = improvedNegotiation.finalOffer;
-              activeNegotiations.set(negotiationId, negotiationData);
-
-              socket.emit('bot_message', {
-                bot: 'tata_aig',
-                message: `I've reviewed your feedback and prepared an improved offer:
-
-📋 **IMPROVED ${negotiationData.insuranceType.toUpperCase()} OFFER**
-💰 Premium: ${improvedNegotiation.finalOffer.premium}
-🛡️ Coverage: ${improvedNegotiation.finalOffer.coverage}
-🎉 Enhanced Offer: ${improvedNegotiation.finalOffer.discount}
-
-✨ **Enhanced Features:**
-${improvedNegotiation.finalOffer.features.map(f => `• ${f}`).join('\n')}
-
-This improved offer addresses your concerns with better pricing and additional benefits.`,
-                timestamp: new Date().toISOString(),
-                avatar: tataAigBot.avatar,
-                name: tataAigBot.name,
-                offer: improvedNegotiation.finalOffer,
-                negotiationId: negotiationId
-              });
-
-              setTimeout(() => {
-                socket.emit('bot_message', {
-                  bot: 'personal',
-                  message: `Excellent! I've secured an improved deal for you with better terms. This renegotiated offer provides more value and addresses your concerns. How does this look?`,
-                  timestamp: new Date().toISOString(),
-                  avatar: personalBot.avatar,
-                  name: personalBot.name
-                });
-              }, 2000);
-            } else {
-              throw new Error('Failed to generate improved offer');
-            }
-
-
-          } catch (renegotiationError) {
-            console.error('Renegotiation Error:', renegotiationError);
-            socket.emit('bot_message', {
-              bot: 'personal',
-              message: `Let me try a different approach to get you better terms. What specific aspects would you like me to focus on - lower premium, higher coverage, or additional benefits?`,
-              timestamp: new Date().toISOString(),
-              avatar: personalBot.avatar,
-              name: personalBot.name
-            });
-          }
-        }, 3000);
-      } else {
-        socket.emit('bot_message', {
-          bot: 'personal',
-          message: `No problem! Let me know what specific changes you'd like, and I'll negotiate again with TATA AIG to get you a better deal. What aspects would you like me to improve - pricing, coverage, or benefits?`,
-          timestamp: new Date().toISOString(),
-          avatar: personalBot.avatar,
-          name: personalBot.name
-        });
-      }
-    } catch (error) {
-      console.error('Reject Offer Error:', error);
-      socket.emit('bot_message', {
-        bot: 'personal',
-        message: `I'll work on getting you better terms. Please let me know what specific improvements you're looking for.`,
-        timestamp: new Date().toISOString(),
-        avatar: personalBot.avatar,
-        name: personalBot.name
-      });
-    }
-  });
-
-  socket.on('payment_completed', async (data) => {
-    const { paymentId, transactionId, status } = data;
-    const userId = socket.id;
-    
-    try {
-      if (status === 'success') {
-        // Find the negotiation data for policy generation
-        let negotiationData = null;
-        for (const [negotiationId, data] of activeNegotiations) {
-          if (data.userId === userId) {
-            negotiationData = data;
-            break;
-          }
-        }
-        
-        if (!negotiationData) {
-          socket.emit('error', { message: 'Unable to find policy data. Please contact support.' });
-          return;
-        }
-
-        // PersonalBot confirms payment
-        socket.emit('bot_message', {
-          bot: 'personal',
-          message: `Excellent! Your payment has been processed successfully. I'm now coordinating with TATA AIG to generate your policy documents and certificate. This will just take a moment...`,
-          timestamp: new Date().toISOString(),
-          avatar: personalBot.avatar,
-          name: personalBot.name
-        });
-
-        // Start A2A for policy generation with visible steps
-        setTimeout(async () => {
-          try {
-            // Show A2A negotiation steps for policy generation
-            const policyNegotiationSteps = [
-              'PersonalBot initiating policy generation with TATA AIG...',
-              'TATA AIG validating payment confirmation...',
-              'Generating unique policy number...',
-              'Creating policy documents and certificate...',
-              'Preparing policy activation...',
-              'Finalizing policy issuance...'
-            ];
-
-            // Show negotiation indicator
-            socket.emit('negotiation_update', {
-              step: 1,
-              message: policyNegotiationSteps[0],
-              timestamp: new Date().toISOString()
-            });
-
-          // Show each negotiation step (faster)
-          for (let i = 1; i < policyNegotiationSteps.length; i++) {
-            setTimeout(() => {
-              socket.emit('negotiation_update', {
-                step: i + 1,
-                message: policyNegotiationSteps[i],
-                timestamp: new Date().toISOString()
-              });
-            }, i * 800); // Faster policy generation steps
-          }
-
-            // Generate policy after negotiation steps
-            setTimeout(async () => {
-              const policyData = await tataAigBot.processPolicyGeneration({ paymentId, transactionId }, negotiationData);
-              
-              if (policyData) {
-                // TATA AIG sends policy confirmation
-                socket.emit('bot_message', {
-                  bot: 'tata_aig',
-                  message: `🎉 **Policy Issued Successfully!**
-
-**Policy Details:**
-📄 Policy Number: **${policyData.policyNumber}**
-📅 Issue Date: ${policyData.issueDate}
-📅 Expiry Date: ${policyData.expiryDate}
-💰 Premium: ${policyData.premium}
-🛡️ Coverage: ${policyData.coverage}
-
-**Policy Documents:**
-📋 [Policy Certificate](${policyData.certificateUrl})
-📄 [Policy Document](${policyData.documentUrl})
-
-**Key Features:**
-${policyData.features.map(f => `• ${f}`).join('\n')}
-
-Your policy is now active! You'll receive the documents via email within 15 minutes. Keep your policy number safe for future reference.
-
-Welcome to the TATA AIG family! 🏢`,
-                  timestamp: new Date().toISOString(),
-                  avatar: tataAigBot.avatar,
-                  name: tataAigBot.name,
-                  policyData: policyData
-                });
-
-                // PersonalBot final message
-                setTimeout(() => {
-                  socket.emit('bot_message', {
-                    bot: 'personal',
-                    message: `🎊 Congratulations! Your insurance policy has been successfully issued. I've completed the entire process for you - from negotiating the best rates to securing your policy.
-
-**What's Next:**
-✅ Your policy is now active
-✅ Documents will arrive in your email
-✅ Keep your policy number: **${policyData.policyNumber}**
-✅ 24/7 customer support available
-
-Thank you for trusting me with your insurance needs! If you need any other insurance products in the future, I'm here to help negotiate the best deals for you. 🤖`,
-                    timestamp: new Date().toISOString(),
-                    avatar: personalBot.avatar,
-                    name: personalBot.name
-                  });
-
-                  // Mark transaction as completed
-                  completedTransactions.set(userId, {
-                    timestamp: Date.now(),
-                    policyNumber: policyData.policyNumber,
-                    status: 'policy_issued'
-                  });
-
-                  // Clean up active negotiation
-                  for (const [negotiationId, data] of activeNegotiations) {
-                    if (data.userId === userId) {
-                      activeNegotiations.delete(negotiationId);
-                      break;
-                    }
-                  }
-                }, 3000);
-              }
-            }, policyNegotiationSteps.length * 800 + 500); // Faster timing
-
-          } catch (error) {
-            console.error('Policy generation error:', error);
-            socket.emit('bot_message', {
-              bot: 'personal',
-              message: `There was an issue generating your policy. Let me contact TATA AIG support to resolve this immediately...`,
-              timestamp: new Date().toISOString(),
-              avatar: personalBot.avatar,
-              name: personalBot.name
-            });
-          }
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Payment completion error:', error);
-      socket.emit('error', { message: 'Payment processing failed. Please try again.' });
-    }
-  });
+  // Removed old insurance purchase handlers (accept_offer, reject_offer, payment_completed)
+  // Since we've moved to service-focused A2A for claims and health checkups only
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
@@ -1102,6 +679,123 @@ Thank you for trusting me with your insurance needs! If you need any other insur
     }
   });
 });
+
+// A2A Handler Functions
+async function handleClaimsA2A(socket, serviceId, serviceDetails, userProfile) {
+  try {
+    socket.emit('negotiation_start', { serviceId, serviceType: 'claims' });
+    
+    setTimeout(async () => {
+      const claimsResult = await claimsAgent.processClaimRequest(
+        serviceDetails.claimType, 
+        serviceDetails, 
+        userProfile
+      );
+
+      // Show claims processing steps
+      if (claimsResult && claimsResult.claimProcessingSteps) {
+        for (let i = 0; i < claimsResult.claimProcessingSteps.length; i++) {
+          setTimeout(() => {
+            socket.emit('negotiation_update', {
+              step: i + 1,
+              message: claimsResult.claimProcessingSteps[i],
+              timestamp: new Date().toISOString()
+            });
+          }, (i + 1) * 800);
+        }
+      }
+
+      // Send claims result
+      setTimeout(() => {
+        socket.emit('negotiation_complete', { serviceId });
+        
+        if (claimsResult && claimsResult.claimId) {
+          const nextStepsText = claimsResult.assessment?.nextSteps?.length 
+            ? claimsResult.assessment.nextSteps.map(step => `• ${step}`).join('\n')
+            : '• Please contact customer support for further assistance';
+            
+          socket.emit('bot_message', {
+            bot: 'claims_agent',
+            message: `📋 **Claim ${claimsResult.status}**\n\n**Claim ID:** ${claimsResult.claimId}\n**Status:** ${claimsResult.status}\n**Assessment:** ${claimsResult.assessment?.reason || 'Claim processed'}\n\n**Next Steps:**\n${nextStepsText}`,
+            claimData: claimsResult,
+            avatar: claimsAgent.avatar,
+            name: claimsAgent.name
+          });
+
+          setTimeout(() => {
+            socket.emit('bot_message', {
+              bot: 'personal',
+              message: `I've processed your claim request with our Claims Agent. Your claim ID is ${claimsResult.claimId}. Is there anything else you need help with?`,
+              avatar: personalBot.avatar,
+              name: personalBot.name
+            });
+          }, 2000);
+        } else {
+          socket.emit('bot_message', {
+            bot: 'personal',
+            message: `I encountered an issue processing your claim. Please try again or contact customer support.`,
+            avatar: personalBot.avatar,
+            name: personalBot.name
+          });
+        }
+      }, (claimsResult?.claimProcessingSteps?.length || 3) * 800 + 500);
+    }, 2000);
+  } catch (error) {
+    console.error('Claims A2A Error:', error);
+  }
+}
+
+async function handleHealthCheckupA2A(socket, serviceId, serviceDetails, userProfile) {
+  try {
+    socket.emit('negotiation_start', { serviceId, serviceType: 'health_checkup' });
+    
+    setTimeout(async () => {
+      const checkupResult = await healthCheckupAgent.processHealthCheckupRequest(
+        serviceDetails.requestType || 'general_checkup',
+        userProfile,
+        userProfile.preferences
+      );
+
+      // Show health checkup processing steps
+      for (let i = 0; i < checkupResult.checkupProcessingSteps.length; i++) {
+        setTimeout(() => {
+          socket.emit('negotiation_update', {
+            step: i + 1,
+            message: checkupResult.checkupProcessingSteps[i],
+            timestamp: new Date().toISOString()
+          });
+        }, (i + 1) * 800);
+      }
+
+      // Send health checkup result
+      setTimeout(() => {
+        socket.emit('negotiation_complete', { serviceId });
+        
+        const recommendation = checkupResult.recommendation;
+        socket.emit('bot_message', {
+          bot: 'health_agent',
+          message: `🩺 **Health Checkup Recommendation**\n\n**Package:** ${recommendation.packageDetails.name}\n**Price:** ₹${recommendation.discountedCost.finalPrice} (${recommendation.discountedCost.discountReasons.join(', ')})\n**Tests:** ${recommendation.packageDetails.tests.slice(0, 3).join(', ')}${recommendation.packageDetails.tests.length > 3 ? '...' : ''}\n**Duration:** ${recommendation.packageDetails.duration}\n\n**Available Slots:**\n${checkupResult.availableSlots.slice(0, 3).map(slot => `• ${slot.day}, ${slot.date} at ${slot.time}`).join('\n')}`,
+          checkupData: checkupResult,
+          avatar: healthCheckupAgent.avatar,
+          name: healthCheckupAgent.name
+        });
+
+        setTimeout(() => {
+          socket.emit('bot_message', {
+            bot: 'personal',
+            message: `I've found great health checkup options for you! The ${recommendation.packageDetails.name} seems perfect based on your age and health profile. Would you like me to book an appointment?`,
+            avatar: personalBot.avatar,
+            name: personalBot.name
+          });
+        }, 2000);
+      }, checkupResult.checkupProcessingSteps.length * 800 + 500);
+    }, 2000);
+  } catch (error) {
+    console.error('Health Checkup A2A Error:', error);
+  }
+}
+
+// Removed handlePurchaseA2A since we're no longer handling insurance purchases
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

@@ -11,7 +11,20 @@
       "year": 2020,
       "variant": "VX CVT",
       "registration": "MH02AB1234",
-      "isPrimary": true
+      "isPrimary": true,
+      "insuranceDetails": {
+        "policyNumber": "TAIG1757138147437747",
+        "provider": "TATA AIG",
+        "policyType": "Comprehensive Motor Insurance",
+        "premium": "₹18,500/year",
+        "coverage": "₹8,00,000 (IDV)",
+        "validFrom": "2024-01-15",
+        "validTill": "2025-01-14",
+        "features": ["Zero Depreciation", "Engine Protection", "Return to Invoice", "24/7 Roadside Assistance"],
+        "deductible": "₹2,500",
+        "ncb": "20%",
+        "addOns": ["Key Replacement", "Tyre Protection"]
+      }
     },
     {
       "make": "Maruti",
@@ -19,28 +32,118 @@
       "year": 2018,
       "variant": "ZXI",
       "registration": "MH01CD5678",
-      "isPrimary": false
+      "isPrimary": false,
+      "insuranceDetails": {
+        "policyNumber": "TAIG1756892341234567",
+        "provider": "TATA AIG",
+        "policyType": "Third Party Motor Insurance",
+        "premium": "₹4,200/year",
+        "coverage": "₹15,00,000 (Third Party)",
+        "validFrom": "2024-03-10",
+        "validTill": "2025-03-09",
+        "features": ["Third Party Coverage", "24/7 Roadside Assistance"]
+      }
     }
   ],
   "family": {
     "spouse": {
       "name": "Priya",
-      "age": 29
+      "age": 29,
+      "occupation": "Marketing Manager",
+      "healthDetails": {
+        "bloodGroup": "A+",
+        "allergies": ["Dust"],
+        "chronicConditions": "None",
+        "lastCheckup": "4 months ago"
+      }
     },
     "children": 1,
-    "totalDependents": 2
+    "totalDependents": 2,
+    "childrenDetails": [
+      {
+        "name": "Arya",
+        "age": 5,
+        "bloodGroup": "O+",
+        "vaccinations": "Up to date",
+        "allergies": "None"
+      }
+    ]
   },
   "health": {
+    "bloodGroup": "B+",
     "smoker": false,
+    "alcohol": "Occasional",
     "preExistingConditions": "None",
     "lastCheckup": "6 months ago",
     "gymMember": true,
-    "bmi": "Normal",
-    "medicalHistory": []
+    "bmi": 24.2,
+    "height": "175 cm",
+    "weight": "74 kg",
+    "medicalHistory": [
+      {
+        "date": "2023-08-15",
+        "condition": "Minor food poisoning",
+        "treatment": "Medication",
+        "resolved": true
+      }
+    ],
+    "medications": "None",
+    "allergies": ["Shellfish"],
+    "chronicConditions": "None",
+    "familyMedicalHistory": "Diabetes (father), Hypertension (mother)",
+    "preferredHospitals": ["Apollo Hospital", "Fortis Hospital", "Lilavati Hospital"]
   },
   "insurance": {
+    "healthInsurance": {
+      "policyNumber": "TAIG2024HLTH789456",
+      "provider": "TATA AIG",
+      "policyType": "Family Health Insurance",
+      "premium": "₹22,000/year",
+      "coverage": "₹10,00,000 per person",
+      "familyCoverage": "₹30,00,000",
+      "validFrom": "2024-04-01",
+      "validTill": "2025-03-31",
+      "features": [
+        "Cashless hospitalization at 6000+ hospitals",
+        "Pre and post hospitalization coverage",
+        "Day care procedures (up to ₹50,000 per year)",
+        "Annual health checkup (up to ₹5,000)",
+        "Maternity coverage (₹50,000 per delivery)",
+        "Ambulance coverage (₹2,000 per trip)"
+      ],
+      "deductible": "₹10,000",
+      "roomRentLimit": "₹5,000/day",
+      "copayment": "10% for senior citizens",
+      "waitingPeriods": {
+        "preExisting": "48 months",
+        "specificDiseases": "24 months"
+      }
+    },
+    "lifeInsurance": {
+      "policyNumber": "TAIG2024LIFE456789",
+      "provider": "TATA AIG",
+      "policyType": "Term Life Insurance",
+      "premium": "₹15,600/year",
+      "coverage": "₹1,00,00,000",
+      "validFrom": "2024-02-01",
+      "validTill": "2054-01-31",
+      "features": [
+        "Accidental death benefit",
+        "Terminal illness benefit",
+        "Tax benefits under 80C",
+        "Flexible premium payment"
+      ],
+      "beneficiaries": [
+        {"name": "Priya", "relationship": "Spouse", "percentage": 70},
+        {"name": "Arya", "relationship": "Child", "percentage": 30}
+      ],
+      "riders": ["Critical Illness Rider", "Accidental Death Benefit Rider"]
+    },
     "currentPolicies": [
-      "Basic health insurance through company"
+      "Family Health Insurance - TATA AIG",
+      "Term Life Insurance - TATA AIG", 
+      "Motor Insurance (Honda City) - TATA AIG",
+      "Motor Insurance (Maruti Swift) - TATA AIG"
     ],
     "preferredCoverage": "Comprehensive",
     "budgetRange": {
@@ -50,19 +153,29 @@
       "period": "year"
     },
     "riskTolerance": "Medium",
-    "previousClaims": "None"
+    "claimsHistory": [
+      {
+        "claimId": "CLM2023001234",
+        "policyType": "Health",
+        "date": "2023-08-20",
+        "amount": "₹45,000",
+        "reason": "Food poisoning hospitalization",
+        "status": "Settled",
+        "hospital": "Apollo Hospital, Mumbai"
+      }
+    ]
   },
   "lifestyle": {
     "drivingExperience": "12 years",
     "accidentHistory": "None",
     "travelFrequency": "Moderate",
-    "hobbies": [
-      "Technology",
-      "Fitness",
-      "Travel"
-    ],
+    "hobbies": ["Technology", "Fitness", "Travel"],
     "workFromHome": true,
-    "dailyCommute": "15 km"
+    "dailyCommute": "15 km",
+    "exerciseFrequency": "4 times/week",
+    "diet": "Vegetarian",
+    "sleepHours": "7-8 hours",
+    "stressLevel": "Moderate"
   },
   "preferences": {
     "communicationStyle": "Direct and efficient",
@@ -71,12 +184,25 @@
       "email": true,
       "sms": true,
       "whatsapp": false
-    }
+    },
+    "preferredAppointmentTime": "Evening (6-8 PM)",
+    "preferredDays": ["Saturday", "Sunday"]
   },
   "financial": {
     "creditScore": "Good",
     "bankingRelationship": "HDFC Bank",
     "investmentProfile": "Moderate",
-    "monthlyExpenses": "₹80,000"
+    "monthlyExpenses": "₹80,000",
+    "emergencyFund": "₹5,00,000"
+  },
+  "contacts": {
+    "primaryPhone": "+91-9876543210",
+    "alternatePhone": "+91-9876543211",
+    "email": "mukul@email.com",
+    "emergencyContact": {
+      "name": "Priya",
+      "relationship": "Spouse",
+      "phone": "+91-9876543212"
+    }
   }
 }
